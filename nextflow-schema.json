@@ -1,0 +1,309 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://github.com/reubenduncan/ecologyflow/tree/main/projects/environmental-filtering/nextflow-schema.json",
+    "title": "Environmental Filtering Pipeline — Parameters",
+    "description": "Nextflow schema for the environmental filtering analysis pipeline (NRI/NTI, NST, QPE).",
+    "type": "object",
+    "definitions": {
+        "input_output_options": {
+            "title": "Input / Output Options",
+            "type": "object",
+            "fa_icon": "fas fa-terminal",
+            "description": "Define input files and output destinations.",
+            "required": ["feature_table", "meta_table"],
+            "properties": {
+                "feature_table": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to the feature table. Accepted formats: BIOM (.biom), TSV, or GTDB TSV.",
+                    "help_text": "When input_format is 'biom' this must be a BIOM file. For 'tsv' or 'gtdb' this must be a tab-separated file with feature IDs as row names and sample IDs as column headers (or vice-versa — orientation is auto-detected).",
+                    "fa_icon": "fas fa-file"
+                },
+                "meta_table": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to sample metadata CSV. First column must contain sample IDs that match those in the feature table.",
+                    "help_text": "Rows are samples, columns are metadata variables. The first column is used as row names.",
+                    "fa_icon": "fas fa-file-csv"
+                },
+                "taxonomy_table": {
+                    "type": "string",
+                    "format": "file-path",
+                    "default": "",
+                    "description": "Path to a two-column TSV: col 1 = feature ID, col 2 = semicolon-separated taxonomy string.",
+                    "help_text": "Required when input_format is 'tsv' or 'gtdb'. Ignored when input_format is 'biom' (taxonomy is embedded). Supports SILVA (D_0__, D_1__, …) and GTDB (d__, p__, …) prefixes.",
+                    "fa_icon": "fas fa-list"
+                },
+                "tree_file": {
+                    "type": "string",
+                    "format": "file-path",
+                    "default": "",
+                    "description": "Path to a phylogenetic tree in Newick format. Required by ENV_FILTERING and QPE processes.",
+                    "help_text": "Tree tip labels must match OTU/ASV IDs in the feature table. Quotes around tip labels are stripped automatically.",
+                    "fa_icon": "fas fa-tree"
+                },
+                "input_format": {
+                    "type": "string",
+                    "default": "biom",
+                    "description": "Format of the input feature table.",
+                    "help_text": "biom: phyloseq import_biom(); tsv: tab-separated with SILVA-style taxonomy; gtdb: tab-separated with GTDB-style taxonomy prefixes.",
+                    "enum": ["biom", "tsv", "gtdb"],
+                    "fa_icon": "fas fa-file-import"
+                },
+                "output_dir": {
+                    "type": "string",
+                    "default": "${projectDir}/results",
+                    "description": "Root directory for output CSVs. Sub-folders EF/, NST/, and QPE/ are created automatically.",
+                    "fa_icon": "fas fa-folder-open"
+                },
+                "scripts_dir": {
+                    "type": "string",
+                    "default": "/opt/ecology-scripts",
+                    "description": "Path to the root of the ecology-scripts repository inside the container.",
+                    "help_text": "The R scripts are resolved relative to this path as scripts_dir/src/R/.",
+                    "fa_icon": "fas fa-code"
+                },
+                "label": {
+                    "type": "string",
+                    "default": "analysis",
+                    "description": "Label appended to all output filenames. Must be a valid filename component.",
+                    "help_text": "Example: 'Hypothesis1' produces Environmental_Filtering_Weighted_Hypothesis1_trialswap.csv.",
+                    "fa_icon": "fas fa-tag"
+                }
+            }
+        },
+        "filtering_options": {
+            "title": "Filtering Options",
+            "type": "object",
+            "fa_icon": "fas fa-filter",
+            "description": "Control sample and feature filtering applied before analysis.",
+            "properties": {
+                "min_library_size": {
+                    "type": "integer",
+                    "default": 5000,
+                    "minimum": 1,
+                    "description": "Minimum total read count per sample. Samples below this threshold are dropped.",
+                    "help_text": "Set lower for low-depth datasets (e.g. 1000) or higher for strict quality control.",
+                    "fa_icon": "fas fa-sliders-h"
+                },
+                "exclude_column": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Metadata column used to exclude samples. Pairs with exclude_values.",
+                    "help_text": "Leave empty to skip sample exclusion.",
+                    "fa_icon": "fas fa-ban"
+                },
+                "exclude_values": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Comma-separated values in exclude_column that identify samples to remove.",
+                    "help_text": "Example: 'control,blank'. Only applied when exclude_column is also set.",
+                    "fa_icon": "fas fa-ban"
+                }
+            }
+        },
+        "grouping_options": {
+            "title": "Grouping Options",
+            "type": "object",
+            "fa_icon": "fas fa-object-group",
+            "description": "Define how samples are grouped for statistical comparisons and output annotation.",
+            "properties": {
+                "groups_column": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Metadata column used as the primary grouping variable (Groups).",
+                    "help_text": "Mutually exclusive with groups_paste_columns. If neither is specified, all samples are assigned to a single group 'All'.",
+                    "fa_icon": "fas fa-layer-group"
+                },
+                "groups_paste_columns": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Comma-separated metadata columns pasted together (space-joined) to form the Groups variable.",
+                    "help_text": "Example: 'Site,Treatment' creates groups like 'SiteA Treatment1'. Takes precedence over groups_column when both are provided.",
+                    "fa_icon": "fas fa-layer-group"
+                },
+                "type_column": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Metadata column for sample Type. Included in EF output CSVs.",
+                    "fa_icon": "fas fa-tag"
+                },
+                "type2_column": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Metadata column for a secondary Type2 grouping. Included in EF output CSVs.",
+                    "fa_icon": "fas fa-tags"
+                },
+                "type2_levels": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Comma-separated ordered factor levels for the Type2 variable.",
+                    "help_text": "When provided, Type2 is treated as an ordered factor. Example: 'low,medium,high'.",
+                    "fa_icon": "fas fa-sort-amount-up"
+                }
+            }
+        },
+        "nri_nti_options": {
+            "title": "NRI / NTI Options (Environmental Filtering)",
+            "type": "object",
+            "fa_icon": "fas fa-project-diagram",
+            "description": "Parameters for NRI and NTI calculation via picante ses.mpd / ses.mntd.",
+            "properties": {
+                "ef_runs": {
+                    "type": "integer",
+                    "default": 999,
+                    "minimum": 9,
+                    "description": "Number of null model randomizations for SES-MPD and SES-MNTD.",
+                    "fa_icon": "fas fa-random"
+                },
+                "ef_iterations": {
+                    "type": "integer",
+                    "default": 1000,
+                    "minimum": 1,
+                    "description": "Number of iterations for the trialswap null model.",
+                    "help_text": "Only used when ef_null_model is 'trialswap' or 'independentswap'.",
+                    "fa_icon": "fas fa-sync-alt"
+                },
+                "ef_top_n_otus": {
+                    "type": "integer",
+                    "default": 2000,
+                    "minimum": 10,
+                    "description": "Number of most abundant OTUs to retain before NRI/NTI calculation.",
+                    "help_text": "If fewer OTUs are available after filtering, all remaining OTUs are used.",
+                    "fa_icon": "fas fa-sort-numeric-down"
+                },
+                "ef_null_model": {
+                    "type": "string",
+                    "default": "trialswap",
+                    "description": "Null model for randomization.",
+                    "enum": ["taxa.labels", "richness", "frequency", "sample.pool", "phylogeny.pool", "independentswap", "trialswap"],
+                    "fa_icon": "fas fa-dice"
+                },
+                "ef_abundance_weighted": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Use abundance-weighted MPD/MNTD metrics.",
+                    "help_text": "When true (default), NRI/NTI are abundance-weighted. When false, presence/absence-based.",
+                    "fa_icon": "fas fa-weight-hanging"
+                },
+                "ef_test_method": {
+                    "type": "string",
+                    "default": "anova",
+                    "description": "Statistical test for pairwise group comparisons of NRI/NTI values.",
+                    "enum": ["anova", "kruskal", "none"],
+                    "fa_icon": "fas fa-flask"
+                },
+                "ef_p_adjust_method": {
+                    "type": "string",
+                    "default": "BH",
+                    "description": "Multiple-testing correction applied to pairwise p-values.",
+                    "enum": ["BH", "bonferroni", "holm", "none"],
+                    "fa_icon": "fas fa-adjust"
+                }
+            }
+        },
+        "nst_options": {
+            "title": "NST Options",
+            "type": "object",
+            "fa_icon": "fas fa-chart-line",
+            "description": "Parameters for null stochasticity test via the NST package.",
+            "properties": {
+                "nst_randomizations": {
+                    "type": "integer",
+                    "default": 1000,
+                    "minimum": 9,
+                    "description": "Number of null model randomizations for tNST.",
+                    "fa_icon": "fas fa-random"
+                },
+                "nst_distance": {
+                    "type": "string",
+                    "default": "cao",
+                    "description": "Dissimilarity measure passed to tNST as dist.method.",
+                    "help_text": "cao: Cao index (recommended for sparse data); bray: Bray-Curtis; jaccard: Jaccard; chao: Chao dissimilarity.",
+                    "enum": ["bray", "jaccard", "cao", "chao"],
+                    "fa_icon": "fas fa-ruler-combined"
+                },
+                "nst_null_model": {
+                    "type": "string",
+                    "default": "PF",
+                    "description": "Null model code passed to tNST. First letter = abundance constraint, second = occurrence constraint (E=equal, P=proportional, F=fixed).",
+                    "enum": ["EE", "EP", "EF", "PE", "PP", "PF", "FE", "FP", "FF"],
+                    "fa_icon": "fas fa-dice"
+                },
+                "nst_abundance_weighted": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Use abundance-weighted (Ruzicka) instead of incidence-based (Jaccard) for NST.",
+                    "fa_icon": "fas fa-weight-hanging"
+                },
+                "nst_ses": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Calculate the standardized effect size (SES) in tNST.",
+                    "fa_icon": "fas fa-calculator"
+                },
+                "nst_rc": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Calculate the modified Raup-Crick metric in tNST.",
+                    "fa_icon": "fas fa-calculator"
+                }
+            }
+        },
+        "qpe_options": {
+            "title": "QPE Options",
+            "type": "object",
+            "fa_icon": "fas fa-network-wired",
+            "description": "Parameters for quantitative process estimation (betaNTI, Raup-Crick, EMS).",
+            "properties": {
+                "qpe_beta_reps": {
+                    "type": "integer",
+                    "default": 999,
+                    "minimum": 9,
+                    "description": "Number of randomizations for betaNTI taxon shuffles and Raup-Crick null distributions.",
+                    "help_text": "Higher values give more stable estimates but increase runtime substantially. 999 is standard for publication.",
+                    "fa_icon": "fas fa-random"
+                },
+                "qpe_ems_sims": {
+                    "type": "integer",
+                    "default": 999,
+                    "minimum": 9,
+                    "description": "Number of null model simulations for metacom EMS (Coherence/Turnover/Boundary).",
+                    "help_text": "Higher values improve p-value precision for EMS tests. 999 is standard; reduce for quick exploratory runs.",
+                    "fa_icon": "fas fa-dice"
+                },
+                "qpe_ordering": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Comma-separated group names defining display order in QPE_summary outputs.",
+                    "help_text": "Leave empty for alphabetical ordering. Example: 'Control,Treatment1,Treatment2'.",
+                    "fa_icon": "fas fa-sort"
+                }
+            }
+        },
+        "output_options": {
+            "title": "Output Options",
+            "type": "object",
+            "fa_icon": "fas fa-file-export",
+            "description": "Additional output formats produced after all analyses complete.",
+            "properties": {
+                "merge_parquet": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Merge all output CSVs into a single Parquet file with analysis and table metadata columns.",
+                    "help_text": "Writes environmental_filtering_{label}.parquet to output_dir. All CSVs are stacked with NA-fill for differing schemas; filter by the 'analysis' and 'table' columns to extract any coherent slice.",
+                    "fa_icon": "fas fa-file-archive"
+                }
+            }
+        }
+    },
+    "allOf": [
+        { "$ref": "#/definitions/input_output_options" },
+        { "$ref": "#/definitions/filtering_options" },
+        { "$ref": "#/definitions/grouping_options" },
+        { "$ref": "#/definitions/nri_nti_options" },
+        { "$ref": "#/definitions/nst_options" },
+        { "$ref": "#/definitions/qpe_options" },
+        { "$ref": "#/definitions/output_options" }
+    ]
+}

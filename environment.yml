@@ -1,0 +1,25 @@
+name: environmental-filtering
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  # Runtime
+  - r-base>=4.2.0
+  - r-optparse
+  - r-stringr
+  - r-data.table
+  - r-vegan
+  - r-ape
+  - r-plyr
+  - r-reshape2
+  - r-nst
+  - r-ecodist
+  - r-metacom
+  - bioconductor-phyloseq
+  - bioconductor-picante
+  - r-arrow
+
+  # Pipeline orchestration
+  - nextflow>=23.04
