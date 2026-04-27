@@ -113,14 +113,17 @@ message("Loading feature table...")
 tax_arg <- if (nchar(opt$taxonomy_table) > 0) opt$taxonomy_table else NULL
 ft_obj  <- load_feature_table(opt$feature_table, opt$input_format, tax_arg)
 abund_table  <- ft_obj$abund_table
-OTU_taxonomy <- ft_obj$OTU_taxonomy
+feature_taxonomy <- ft_obj$feature_taxonomy
 
 # ---------------------------------------------------------------------------
 # Metadata
 # ---------------------------------------------------------------------------
 message("Loading metadata...")
-meta_table <- read.csv(opt$meta_table, header = TRUE, row.names = 1,
-                       stringsAsFactors = FALSE)
+meta_table <- local({
+  sep <- if (grepl("\t", readLines(opt$meta_table, n = 1, warn = FALSE))) "\t" else ","
+  read.table(opt$meta_table, header = TRUE, sep = sep, row.names = 1,
+             check.names = FALSE, stringsAsFactors = FALSE)
+})
 
 .check_col <- function(col, df, arg) {
   if (col != "" && !col %in% colnames(df))
@@ -140,12 +143,12 @@ if (opt$groups_paste_columns != "") {
 # ---------------------------------------------------------------------------
 abund_table <- abund_table[rowSums(abund_table) >= opt$min_library_size, , drop = FALSE]
 abund_table <- abund_table[, colSums(abund_table) > 1, drop = FALSE]
-OTU_taxonomy <- OTU_taxonomy[colnames(abund_table), , drop = FALSE]
+feature_taxonomy <- feature_taxonomy[colnames(abund_table), , drop = FALSE]
 
 abund_table  <- abund_table[rownames(abund_table) %in% rownames(meta_table), , drop = FALSE]
 abund_table  <- abund_table[, colSums(abund_table) > 0, drop = FALSE]
 meta_table   <- meta_table[rownames(abund_table), , drop = FALSE]
-OTU_taxonomy <- OTU_taxonomy[colnames(abund_table), , drop = FALSE]
+feature_taxonomy <- feature_taxonomy[colnames(abund_table), , drop = FALSE]
 
 # ---------------------------------------------------------------------------
 # Hypothesis space
@@ -167,7 +170,7 @@ if (opt$groups_paste_columns != "") {
 
 abund_table  <- abund_table[rownames(meta_table), , drop = FALSE]
 abund_table  <- abund_table[, colSums(abund_table) > 0, drop = FALSE]
-OTU_taxonomy <- OTU_taxonomy[colnames(abund_table), , drop = FALSE]
+feature_taxonomy <- feature_taxonomy[colnames(abund_table), , drop = FALSE]
 abund_mat    <- as(abund_table, "matrix")
 
 # ---------------------------------------------------------------------------

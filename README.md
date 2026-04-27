@@ -35,7 +35,6 @@ nextflow run main.nf \
 | `--tree_file` | `""` | Newick phylogenetic tree (required for QPE/βNTI) |
 | `--input_format` | `biom` | `biom` \| `tsv` \| `gtdb` |
 | `--output_dir` | `results/` | Directory for output files |
-| `--scripts_dir` | `/opt/ecology-scripts` | Path to R scripts (override for local runs) |
 
 ### Filtering
 
@@ -60,14 +59,14 @@ nextflow run main.nf \
 | Parameter | Default | Description |
 |---|---|---|
 | `--ef_variables` | `""` | Comma-separated metadata columns to use as environmental variables |
-| `--ef_which_level` | `Otus` | Taxonomic level for EF analysis |
+| `--ef_taxon_rank` | `Feature` | Taxonomic level for EF analysis |
 | `--ef_dist_method` | `bray` | Community dissimilarity metric for EF |
 
 ### NST
 
 | Parameter | Default | Description |
 |---|---|---|
-| `--nst_which_level` | `Otus` | Taxonomic level for NST analysis |
+| `--nst_taxon_rank` | `Feature` | Taxonomic level for NST analysis |
 | `--nst_dist_method` | `bray` | Dissimilarity metric for NST |
 | `--nst_null_model` | `PF` | Null model type: `PF` \| `RF` \| `PCF` \| `RCF` \| `RNDF` |
 | `--nst_randomizations` | `999` | Number of null model randomisations |
@@ -77,7 +76,7 @@ nextflow run main.nf \
 
 | Parameter | Default | Description |
 |---|---|---|
-| `--qpe_which_level` | `Otus` | Taxonomic level for QPE analysis |
+| `--qpe_taxon_rank` | `Feature` | Taxonomic level for QPE analysis |
 | `--qpe_beta_reps` | `999` | Number of βNTI null model repetitions |
 | `--qpe_ems_sims` | `999` | Number of Metacommunity (EMS) simulations — reduce for speed (e.g. `9`) |
 | `--qpe_ordering` | `""` | Comma-separated group order for QPE plots |
@@ -131,19 +130,23 @@ All files are written to `--output_dir`.
 
 ## Performance note
 
-`--qpe_ems_sims` defaults to `999` but each simulation is O(samples × OTUs), making this the most time-consuming step (~45 min/group at default settings on typical datasets). Use `--qpe_ems_sims 9` for exploratory runs.
+`--qpe_ems_sims` defaults to `999` but each simulation is O(samples × features), making this the most time-consuming step (~45 min/group at default settings on typical datasets). Use `--qpe_ems_sims 9` for exploratory runs.
 
 ## Requirements
 
 - [Nextflow](https://www.nextflow.io/) ≥ 23.04
-- Docker (default) **or** a local R installation with: `optparse`, `vegan`, `ape`, `picante`, `NST`, `metacom`, `stringr`, `data.table`, `phyloseq`, `arrow`
+- [conda](https://docs.conda.io/) or [mamba](https://mamba.readthedocs.io/) (default executor — environment built automatically from `environment.yml`)
+- **or** Docker with `-profile docker`
+- **or** Singularity with `-profile singularity`
+- **or** a local R installation with: `optparse`, `vegan`, `ape`, `picante`, `NST`, `metacom`, `stringr`, `data.table`, `phyloseq`, `arrow`
 
-## Running without Docker
+## Running with a local R installation
+
+Add `-profile` to select your execution environment (conda is used by default if no profile is specified):
 
 ```bash
 nextflow run main.nf \
   -c nextflow.config \
-  --scripts_dir   "$(pwd)" \
   --feature_table /path/to/table.biom \
   --meta_table    /path/to/meta.csv \
   --tree_file     /path/to/tree.nwk \
@@ -151,3 +154,5 @@ nextflow run main.nf \
   --label         my_analysis \
   --qpe_ems_sims  9
 ```
+
+Available profiles: `conda` (default), `docker`, `singularity`.

@@ -77,9 +77,9 @@ option_list <- list(
   make_option("--iterations",
               type="integer", default=1000L,
               help="Iterations for trialswap null model [default: 1000]"),
-  make_option("--top_n_otus",
+  make_option("--top_n_features",
               type="integer", default=2000L,
-              help="Number of most abundant OTUs to use [default: 2000]"),
+              help="Number of most abundant features to use [default: 2000]"),
   make_option("--null_model",
               type="character", default="trialswap",
               help="Null model: taxa.labels|richness|frequency|sample.pool|phylogeny.pool|independentswap|trialswap [default: trialswap]"),
@@ -137,14 +137,17 @@ message("Loading feature table...")
 tax_arg <- if (nchar(opt$taxonomy_table) > 0) opt$taxonomy_table else NULL
 ft_obj  <- load_feature_table(opt$feature_table, opt$input_format, tax_arg)
 abund_table  <- ft_obj$abund_table
-OTU_taxonomy <- ft_obj$OTU_taxonomy
+feature_taxonomy <- ft_obj$feature_taxonomy
 
 # ---------------------------------------------------------------------------
 # Metadata
 # ---------------------------------------------------------------------------
 message("Loading metadata...")
-meta_table <- read.csv(opt$meta_table, header = TRUE, row.names = 1,
-                       stringsAsFactors = FALSE)
+meta_table <- local({
+  sep <- if (grepl("\t", readLines(opt$meta_table, n = 1, warn = FALSE))) "\t" else ","
+  read.table(opt$meta_table, header = TRUE, sep = sep, row.names = 1,
+             check.names = FALSE, stringsAsFactors = FALSE)
+})
 
 # Validate key columns exist before use
 .check_col <- function(col, df, arg) {
@@ -167,13 +170,13 @@ if (opt$groups_paste_columns != "") {
 # ---------------------------------------------------------------------------
 abund_table <- abund_table[rowSums(abund_table) >= opt$min_library_size, , drop = FALSE]
 abund_table <- abund_table[, colSums(abund_table) > 1, drop = FALSE]
-OTU_taxonomy <- OTU_taxonomy[colnames(abund_table), , drop = FALSE]
+feature_taxonomy <- feature_taxonomy[colnames(abund_table), , drop = FALSE]
 
 # Align to metadata
 abund_table  <- abund_table[rownames(abund_table) %in% rownames(meta_table), , drop = FALSE]
 abund_table  <- abund_table[, colSums(abund_table) > 0, drop = FALSE]
 meta_table   <- meta_table[rownames(abund_table), , drop = FALSE]
-OTU_taxonomy <- OTU_taxonomy[colnames(abund_table), , drop = FALSE]
+feature_taxonomy <- feature_taxonomy[colnames(abund_table), , drop = FALSE]
 
 # ---------------------------------------------------------------------------
 # Hypothesis space (exclude, groups, type)
@@ -212,7 +215,7 @@ if (opt$type2_column != "") {
 
 abund_table  <- abund_table[rownames(meta_table), , drop = FALSE]
 abund_table  <- abund_table[, colSums(abund_table) > 0, drop = FALSE]
-OTU_taxonomy <- OTU_taxonomy[colnames(abund_table), , drop = FALSE]
+feature_taxonomy <- feature_taxonomy[colnames(abund_table), , drop = FALSE]
 
 # ---------------------------------------------------------------------------
 # Minimum sample check
@@ -225,48 +228,48 @@ if (nrow(abund_table) < 3)
 # Tree
 # ---------------------------------------------------------------------------
 message("Loading phylogenetic tree...")
-OTU_tree <- tryCatch(
+feature_tree <- tryCatch(
   read.tree(opt$tree_file),
   error = function(e) stop("Failed to read tree file: ", conditionMessage(e))
 )
-OTU_tree$tip.label <- gsub("'", "", OTU_tree$tip.label)
+feature_tree$tip.label <- gsub("'", "", feature_tree$tip.label)
 
 # ---------------------------------------------------------------------------
-# Subset to top_n_otus by abundance
+# Subset to top_n_features by abundance
 # ---------------------------------------------------------------------------
-n_otus_available <- ncol(abund_table)
-top_n <- min(opt$top_n_otus, n_otus_available)
-if (top_n < opt$top_n_otus)
-  message("top_n_otus (", opt$top_n_otus, ") exceeds available OTUs (",
-          n_otus_available, ") after filtering — using all ", n_otus_available, " OTUs.")
+n_features_available <- ncol(abund_table)
+top_n <- min(opt$top_n_features, n_features_available)
+if (top_n < opt$top_n_features)
+  message("top_n_features (", opt$top_n_features, ") exceeds available features (",
+          n_features_available, ") after filtering — using all ", n_features_available, " features.")
 abund_table <- abund_table[, order(colSums(abund_table), decreasing = TRUE),
                            drop = FALSE][, seq_len(top_n), drop = FALSE]
 
 # ---------------------------------------------------------------------------
-# Prune tree to match OTUs
+# Prune tree to match features
 # ---------------------------------------------------------------------------
-tips_in_data <- OTU_tree$tip.label %in% colnames(abund_table)
+tips_in_data <- feature_tree$tip.label %in% colnames(abund_table)
 if (sum(tips_in_data) == 0)
-  stop("No tree tips match OTU names in the feature table after filtering. ",
+  stop("No tree tips match feature names in the feature table after filtering. ",
        "Check that tree tip labels and feature IDs use the same naming convention.")
-OTU_tree <- drop.tip(OTU_tree,
-                     OTU_tree$tip.label[!OTU_tree$tip.label %in% colnames(abund_table)])
+feature_tree <- drop.tip(feature_tree,
+                     feature_tree$tip.label[!feature_tree$tip.label %in% colnames(abund_table)])
 
 # Align table columns to pruned tree
-common_otus <- intersect(colnames(abund_table), OTU_tree$tip.label)
-if (length(common_otus) == 0)
-  stop("No OTUs remain after aligning feature table to tree tips.")
-abund_table <- abund_table[, OTU_tree$tip.label, drop = FALSE]
+common_features <- intersect(colnames(abund_table), feature_tree$tip.label)
+if (length(common_features) == 0)
+  stop("No features remain after aligning feature table to tree tips.")
+abund_table <- abund_table[, feature_tree$tip.label, drop = FALSE]
 abund_table <- as(abund_table, "matrix")
 
 message("Running NRI/NTI on ", nrow(abund_table), " samples x ",
-        ncol(abund_table), " OTUs.")
+        ncol(abund_table), " features.")
 
 # ---------------------------------------------------------------------------
 # SES-MPD (→ NRI) and SES-MNTD (→ NTI)
 # ---------------------------------------------------------------------------
 second_label <- if (opt$abundance_weighted) "Weighted" else "Unweighted"
-cop_dist     <- cophenetic(OTU_tree)
+cop_dist     <- cophenetic(feature_tree)
 
 abund_table.sesmpd <- ses.mpd(
   abund_table, cop_dist,

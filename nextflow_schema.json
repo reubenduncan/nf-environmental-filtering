@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema",
     "$id": "https://github.com/reubenduncan/ecologyflow/tree/main/projects/environmental-filtering/nextflow-schema.json",
-    "title": "Environmental Filtering Pipeline — Parameters",
+    "title": "Environmental Filtering Pipeline \u2014 Parameters",
     "description": "Nextflow schema for the environmental filtering analysis pipeline (NRI/NTI, NST, QPE).",
     "type": "object",
     "definitions": {
@@ -10,13 +10,16 @@
             "type": "object",
             "fa_icon": "fas fa-terminal",
             "description": "Define input files and output destinations.",
-            "required": ["feature_table", "meta_table"],
+            "required": [
+                "feature_table",
+                "meta_table"
+            ],
             "properties": {
                 "feature_table": {
                     "type": "string",
                     "format": "file-path",
                     "description": "Path to the feature table. Accepted formats: BIOM (.biom), TSV, or GTDB TSV.",
-                    "help_text": "When input_format is 'biom' this must be a BIOM file. For 'tsv' or 'gtdb' this must be a tab-separated file with feature IDs as row names and sample IDs as column headers (or vice-versa — orientation is auto-detected).",
+                    "help_text": "When input_format is 'biom' this must be a BIOM file. For 'tsv' or 'gtdb' this must be a tab-separated file with feature IDs as row names and sample IDs as column headers (or vice-versa \u2014 orientation is auto-detected).",
                     "fa_icon": "fas fa-file"
                 },
                 "meta_table": {
@@ -31,7 +34,7 @@
                     "format": "file-path",
                     "default": "",
                     "description": "Path to a two-column TSV: col 1 = feature ID, col 2 = semicolon-separated taxonomy string.",
-                    "help_text": "Required when input_format is 'tsv' or 'gtdb'. Ignored when input_format is 'biom' (taxonomy is embedded). Supports SILVA (D_0__, D_1__, …) and GTDB (d__, p__, …) prefixes.",
+                    "help_text": "Required when input_format is 'tsv' or 'gtdb'. Ignored when input_format is 'biom' (taxonomy is embedded). Supports SILVA (D_0__, D_1__, \u2026) and GTDB (d__, p__, \u2026) prefixes.",
                     "fa_icon": "fas fa-list"
                 },
                 "tree_file": {
@@ -39,7 +42,7 @@
                     "format": "file-path",
                     "default": "",
                     "description": "Path to a phylogenetic tree in Newick format. Required by ENV_FILTERING and QPE processes.",
-                    "help_text": "Tree tip labels must match OTU/ASV IDs in the feature table. Quotes around tip labels are stripped automatically.",
+                    "help_text": "Tree tip labels must match feature IDs in the feature table. Quotes around tip labels are stripped automatically.",
                     "fa_icon": "fas fa-tree"
                 },
                 "input_format": {
@@ -47,7 +50,11 @@
                     "default": "biom",
                     "description": "Format of the input feature table.",
                     "help_text": "biom: phyloseq import_biom(); tsv: tab-separated with SILVA-style taxonomy; gtdb: tab-separated with GTDB-style taxonomy prefixes.",
-                    "enum": ["biom", "tsv", "gtdb"],
+                    "enum": [
+                        "biom",
+                        "tsv",
+                        "gtdb"
+                    ],
                     "fa_icon": "fas fa-file-import"
                 },
                 "output_dir": {
@@ -55,13 +62,6 @@
                     "default": "${projectDir}/results",
                     "description": "Root directory for output CSVs. Sub-folders EF/, NST/, and QPE/ are created automatically.",
                     "fa_icon": "fas fa-folder-open"
-                },
-                "scripts_dir": {
-                    "type": "string",
-                    "default": "/opt/ecology-scripts",
-                    "description": "Path to the root of the ecology-scripts repository inside the container.",
-                    "help_text": "The R scripts are resolved relative to this path as scripts_dir/src/R/.",
-                    "fa_icon": "fas fa-code"
                 },
                 "label": {
                     "type": "string",
@@ -164,19 +164,27 @@
                     "help_text": "Only used when ef_null_model is 'trialswap' or 'independentswap'.",
                     "fa_icon": "fas fa-sync-alt"
                 },
-                "ef_top_n_otus": {
+                "ef_top_n_features": {
                     "type": "integer",
                     "default": 2000,
                     "minimum": 10,
-                    "description": "Number of most abundant OTUs to retain before NRI/NTI calculation.",
-                    "help_text": "If fewer OTUs are available after filtering, all remaining OTUs are used.",
+                    "description": "Number of most abundant features to retain before NRI/NTI calculation.",
+                    "help_text": "If fewer features are available after filtering, all remaining features are used.",
                     "fa_icon": "fas fa-sort-numeric-down"
                 },
                 "ef_null_model": {
                     "type": "string",
                     "default": "trialswap",
                     "description": "Null model for randomization.",
-                    "enum": ["taxa.labels", "richness", "frequency", "sample.pool", "phylogeny.pool", "independentswap", "trialswap"],
+                    "enum": [
+                        "taxa.labels",
+                        "richness",
+                        "frequency",
+                        "sample.pool",
+                        "phylogeny.pool",
+                        "independentswap",
+                        "trialswap"
+                    ],
                     "fa_icon": "fas fa-dice"
                 },
                 "ef_abundance_weighted": {
@@ -190,14 +198,23 @@
                     "type": "string",
                     "default": "anova",
                     "description": "Statistical test for pairwise group comparisons of NRI/NTI values.",
-                    "enum": ["anova", "kruskal", "none"],
+                    "enum": [
+                        "anova",
+                        "kruskal",
+                        "none"
+                    ],
                     "fa_icon": "fas fa-flask"
                 },
                 "ef_p_adjust_method": {
                     "type": "string",
                     "default": "BH",
                     "description": "Multiple-testing correction applied to pairwise p-values.",
-                    "enum": ["BH", "bonferroni", "holm", "none"],
+                    "enum": [
+                        "BH",
+                        "bonferroni",
+                        "holm",
+                        "none"
+                    ],
                     "fa_icon": "fas fa-adjust"
                 }
             }
@@ -220,14 +237,29 @@
                     "default": "cao",
                     "description": "Dissimilarity measure passed to tNST as dist.method.",
                     "help_text": "cao: Cao index (recommended for sparse data); bray: Bray-Curtis; jaccard: Jaccard; chao: Chao dissimilarity.",
-                    "enum": ["bray", "jaccard", "cao", "chao"],
+                    "enum": [
+                        "bray",
+                        "jaccard",
+                        "cao",
+                        "chao"
+                    ],
                     "fa_icon": "fas fa-ruler-combined"
                 },
                 "nst_null_model": {
                     "type": "string",
                     "default": "PF",
                     "description": "Null model code passed to tNST. First letter = abundance constraint, second = occurrence constraint (E=equal, P=proportional, F=fixed).",
-                    "enum": ["EE", "EP", "EF", "PE", "PP", "PF", "FE", "FP", "FF"],
+                    "enum": [
+                        "EE",
+                        "EP",
+                        "EF",
+                        "PE",
+                        "PP",
+                        "PF",
+                        "FE",
+                        "FP",
+                        "FF"
+                    ],
                     "fa_icon": "fas fa-dice"
                 },
                 "nst_abundance_weighted": {
@@ -298,12 +330,26 @@
         }
     },
     "allOf": [
-        { "$ref": "#/definitions/input_output_options" },
-        { "$ref": "#/definitions/filtering_options" },
-        { "$ref": "#/definitions/grouping_options" },
-        { "$ref": "#/definitions/nri_nti_options" },
-        { "$ref": "#/definitions/nst_options" },
-        { "$ref": "#/definitions/qpe_options" },
-        { "$ref": "#/definitions/output_options" }
+        {
+            "$ref": "#/definitions/input_output_options"
+        },
+        {
+            "$ref": "#/definitions/filtering_options"
+        },
+        {
+            "$ref": "#/definitions/grouping_options"
+        },
+        {
+            "$ref": "#/definitions/nri_nti_options"
+        },
+        {
+            "$ref": "#/definitions/nst_options"
+        },
+        {
+            "$ref": "#/definitions/qpe_options"
+        },
+        {
+            "$ref": "#/definitions/output_options"
+        }
     ]
 }
