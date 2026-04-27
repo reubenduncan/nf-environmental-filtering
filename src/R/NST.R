@@ -49,12 +49,9 @@ option_list <- list(
               help="Comma-separated values in exclude_column to remove"),
 
   # Grouping
-  make_option("--groups_column",
+  make_option("--group",
               type="character", default="",
-              help="Metadata column for the Groups variable"),
-  make_option("--groups_paste_columns",
-              type="character", default="",
-              help="Comma-separated metadata columns pasted together to form Groups"),
+              help="One metadata column, or comma-separated columns to paste (space-joined) as the Groups label"),
 
   # NST parameters
   make_option("--nst_randomizations",
@@ -132,10 +129,9 @@ meta_table <- local({
          paste(colnames(df), collapse = ", "))
 }
 .check_col(opt$exclude_column,  meta_table, "--exclude_column")
-.check_col(opt$groups_column,   meta_table, "--groups_column")
-if (opt$groups_paste_columns != "") {
-  for (pc in trimws(strsplit(opt$groups_paste_columns, ",")[[1]]))
-    .check_col(pc, meta_table, "--groups_paste_columns")
+if (opt$group != "") {
+  for (pc in trimws(strsplit(opt$group, ",")[[1]]))
+    .check_col(pc, meta_table, "--group")
 }
 
 # ---------------------------------------------------------------------------
@@ -159,19 +155,22 @@ if (opt$exclude_column != "" && opt$exclude_values != "") {
   meta_table <- meta_table[keep_rows, , drop = FALSE]
 }
 
-if (opt$groups_paste_columns != "") {
-  paste_cols        <- trimws(strsplit(opt$groups_paste_columns, ",")[[1]])
-  meta_table$Groups <- as.factor(do.call(paste, c(meta_table[, paste_cols, drop = FALSE], sep = " ")))
-} else if (opt$groups_column != "") {
-  meta_table$Groups <- as.factor(as.character(meta_table[[opt$groups_column]]))
+if (opt$group != "") {
+  cols <- trimws(strsplit(opt$group, ",")[[1]])
+  meta_table$Groups <- if (length(cols) == 1) {
+    as.factor(as.character(meta_table[[cols]]))
+  } else {
+    as.factor(do.call(paste, c(meta_table[, cols, drop = FALSE], sep = " ")))
+  }
 } else {
   meta_table$Groups <- factor("All")
+  message("No --group specified — all samples assigned to group 'All'.")
 }
 
 abund_table  <- abund_table[rownames(meta_table), , drop = FALSE]
 abund_table  <- abund_table[, colSums(abund_table) > 0, drop = FALSE]
 feature_taxonomy <- feature_taxonomy[colnames(abund_table), , drop = FALSE]
-abund_mat    <- as(abund_table, "matrix")
+abund_mat    <- as.matrix(abund_table)
 
 # ---------------------------------------------------------------------------
 # Validate group structure: need >= 2 groups each with >= 2 samples

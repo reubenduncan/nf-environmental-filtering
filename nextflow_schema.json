@@ -108,38 +108,23 @@
             "fa_icon": "fas fa-object-group",
             "description": "Define how samples are grouped for statistical comparisons and output annotation.",
             "properties": {
-                "groups_column": {
+                "group": {
                     "type": "string",
                     "default": "",
-                    "description": "Metadata column used as the primary grouping variable (Groups).",
-                    "help_text": "Mutually exclusive with groups_paste_columns. If neither is specified, all samples are assigned to a single group 'All'.",
+                    "description": "One metadata column, or comma-separated columns to paste (space-joined) as the Groups label. If omitted, all samples are assigned to a single group 'All'.",
                     "fa_icon": "fas fa-layer-group"
                 },
-                "groups_paste_columns": {
+                "type": {
                     "type": "string",
                     "default": "",
-                    "description": "Comma-separated metadata columns pasted together (space-joined) to form the Groups variable.",
-                    "help_text": "Example: 'Site,Treatment' creates groups like 'SiteA Treatment1'. Takes precedence over groups_column when both are provided.",
-                    "fa_icon": "fas fa-layer-group"
-                },
-                "type_column": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Metadata column for sample Type. Included in EF output CSVs.",
+                    "description": "Optional metadata column for sample Type annotation. Included as a column in EF output CSVs.",
                     "fa_icon": "fas fa-tag"
                 },
-                "type2_column": {
+                "type2": {
                     "type": "string",
                     "default": "",
-                    "description": "Metadata column for a secondary Type2 grouping. Included in EF output CSVs.",
+                    "description": "Optional metadata column for secondary Type2 annotation. Included as a column in EF output CSVs.",
                     "fa_icon": "fas fa-tags"
-                },
-                "type2_levels": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Comma-separated ordered factor levels for the Type2 variable.",
-                    "help_text": "When provided, Type2 is treated as an ordered factor. Example: 'low,medium,high'.",
-                    "fa_icon": "fas fa-sort-amount-up"
                 }
             }
         },

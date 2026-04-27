@@ -26,41 +26,34 @@ process ENV_FILTERING {
     path "EF_pairwise_*.csv",            emit: ef_pairwise
 
     script:
-    def tax_arg       = params.taxonomy_table       ? "--taxonomy_table '${params.taxonomy_table}'"                 : ""
-    def excl_col_arg  = params.exclude_column        ? "--exclude_column '${params.exclude_column}'"                : ""
-    def excl_val_arg  = params.exclude_values        ? "--exclude_values '${params.exclude_values}'"                : ""
-    def grp_col_arg   = params.groups_column         ? "--groups_column '${params.groups_column}'"                  : ""
-    def grp_paste_arg = params.groups_paste_columns  ? "--groups_paste_columns '${params.groups_paste_columns}'"   : ""
-    def type_col_arg  = params.type_column           ? "--type_column '${params.type_column}'"                     : ""
-    def type2_col_arg = params.type2_column          ? "--type2_column '${params.type2_column}'"                   : ""
-    def type2_lvl_arg = params.type2_levels          ? "--type2_levels '${params.type2_levels}'"                   : ""
-    def aw_arg        = params.ef_abundance_weighted ? "--abundance_weighted"                                       : ""
+    def tax_arg  = params.taxonomy_table       ? "--taxonomy_table '${params.taxonomy_table}'" : ""
+    def excl_col = params.exclude_column       ? "--exclude_column '${params.exclude_column}'" : ""
+    def excl_val = params.exclude_values       ? "--exclude_values '${params.exclude_values}'" : ""
+    def aw_arg   = params.ef_abundance_weighted ? "--abundance_weighted"                        : ""
 
     """
     Rscript ${projectDir}/src/R/environmental_filtering.R \\
-        --feature_table     '${feature_table}'            \\
-        --meta_table        '${meta_table}'               \\
-        --tree_file         '${tree_file}'                \\
-        --input_format      '${params.input_format}'      \\
-        --output_dir        '.'                           \\
-        --label             '${params.label}'             \\
-        --scripts_dir       '${projectDir}'       \\
-        --min_library_size  ${params.min_library_size}    \\
-        --runs              ${params.ef_runs}             \\
-        --iterations        ${params.ef_iterations}       \\
-        --top_n_features        ${params.ef_top_n_features}       \\
-        --null_model        '${params.ef_null_model}'     \\
-        --test_method       '${params.ef_test_method}'    \\
-        --p_adjust_method   '${params.ef_p_adjust_method}'\\
-        ${aw_arg}           \\
-        ${tax_arg}          \\
-        ${excl_col_arg}     \\
-        ${excl_val_arg}     \\
-        ${grp_col_arg}      \\
-        ${grp_paste_arg}    \\
-        ${type_col_arg}     \\
-        ${type2_col_arg}    \\
-        ${type2_lvl_arg}
+        --feature_table     '${feature_table}'             \\
+        --meta_table        '${meta_table}'                \\
+        --tree_file         '${tree_file}'                 \\
+        --input_format      '${params.input_format}'       \\
+        --output_dir        '.'                            \\
+        --label             '${params.label}'              \\
+        --scripts_dir       '${projectDir}'                \\
+        --min_library_size  ${params.min_library_size}     \\
+        --runs              ${params.ef_runs}              \\
+        --iterations        ${params.ef_iterations}        \\
+        --top_n_features    ${params.ef_top_n_features}    \\
+        --null_model        '${params.ef_null_model}'      \\
+        --test_method       '${params.ef_test_method}'     \\
+        --p_adjust_method   '${params.ef_p_adjust_method}' \\
+        ${aw_arg}                                          \\
+        ${tax_arg}                                         \\
+        ${excl_col}                                        \\
+        ${excl_val}                                        \\
+        ${params.group ? "--group '${params.group}'" : ""} \\
+        ${params.type  ? "--type  '${params.type}'"  : ""} \\
+        ${params.type2 ? "--type2 '${params.type2}'" : ""}
     """
 }
 
@@ -82,14 +75,12 @@ process NST {
     path "Stochasticity-Ratios_*_PAIRWISE.csv", emit: nst_pairwise
 
     script:
-    def tax_arg       = params.taxonomy_table       ? "--taxonomy_table '${params.taxonomy_table}'"               : ""
-    def excl_col_arg  = params.exclude_column        ? "--exclude_column '${params.exclude_column}'"              : ""
-    def excl_val_arg  = params.exclude_values        ? "--exclude_values '${params.exclude_values}'"              : ""
-    def grp_col_arg   = params.groups_column         ? "--groups_column '${params.groups_column}'"                : ""
-    def grp_paste_arg = params.groups_paste_columns  ? "--groups_paste_columns '${params.groups_paste_columns}'" : ""
-    def aw_arg        = params.nst_abundance_weighted ? "--nst_abundance_weighted"                                 : ""
-    def ses_arg       = params.nst_ses               ? "--nst_ses"                                                : ""
-    def rc_arg        = params.nst_rc                ? "--nst_rc"                                                  : ""
+    def tax_arg  = params.taxonomy_table        ? "--taxonomy_table '${params.taxonomy_table}'" : ""
+    def excl_col = params.exclude_column        ? "--exclude_column '${params.exclude_column}'" : ""
+    def excl_val = params.exclude_values        ? "--exclude_values '${params.exclude_values}'" : ""
+    def aw_arg   = params.nst_abundance_weighted ? "--nst_abundance_weighted"                   : ""
+    def ses_arg  = params.nst_ses               ? "--nst_ses"                                   : ""
+    def rc_arg   = params.nst_rc                ? "--nst_rc"                                    : ""
 
     """
     Rscript ${projectDir}/src/R/NST.R \\
@@ -98,19 +89,18 @@ process NST {
         --input_format         '${params.input_format}'      \\
         --output_dir           '.'                           \\
         --label                '${params.label}'             \\
-        --scripts_dir          '${projectDir}'       \\
+        --scripts_dir          '${projectDir}'               \\
         --min_library_size     ${params.min_library_size}    \\
         --nst_randomizations   ${params.nst_randomizations}  \\
         --nst_distance         '${params.nst_distance}'      \\
         --nst_null_model       '${params.nst_null_model}'    \\
-        ${aw_arg}              \\
-        ${ses_arg}             \\
-        ${rc_arg}              \\
-        ${tax_arg}             \\
-        ${excl_col_arg}        \\
-        ${excl_val_arg}        \\
-        ${grp_col_arg}         \\
-        ${grp_paste_arg}
+        ${aw_arg}                                            \\
+        ${ses_arg}                                           \\
+        ${rc_arg}                                            \\
+        ${tax_arg}                                           \\
+        ${excl_col}                                          \\
+        ${excl_val}                                          \\
+        ${params.group ? "--group '${params.group}'" : ""}
     """
 }
 
@@ -138,29 +128,26 @@ process QPE {
     path "bNTI_*.csv",         emit: bnti
 
     script:
-    def tax_arg       = params.taxonomy_table       ? "--taxonomy_table '${params.taxonomy_table}'"               : ""
-    def excl_col_arg  = params.exclude_column        ? "--exclude_column '${params.exclude_column}'"              : ""
-    def excl_val_arg  = params.exclude_values        ? "--exclude_values '${params.exclude_values}'"              : ""
-    def grp_col_arg   = params.groups_column         ? "--groups_column '${params.groups_column}'"                : ""
-    def grp_paste_arg = params.groups_paste_columns  ? "--groups_paste_columns '${params.groups_paste_columns}'" : ""
+    def tax_arg  = params.taxonomy_table ? "--taxonomy_table '${params.taxonomy_table}'" : ""
+    def excl_col = params.exclude_column ? "--exclude_column '${params.exclude_column}'" : ""
+    def excl_val = params.exclude_values ? "--exclude_values '${params.exclude_values}'" : ""
 
     """
     Rscript ${projectDir}/src/R/QPE.R \\
-        --feature_table     '${feature_table}'            \\
-        --meta_table        '${meta_table}'               \\
-        --tree_file         '${tree_file}'                \\
-        --input_format      '${params.input_format}'      \\
-        --output_dir        '.'                           \\
-        --label             '${params.label}'             \\
-        --scripts_dir       '${projectDir}'       \\
-        --min_library_size  ${params.min_library_size}    \\
-        --beta_reps         ${params.qpe_beta_reps}       \\
-        --ems_sims          ${params.qpe_ems_sims}        \\
-        ${tax_arg}          \\
-        ${excl_col_arg}     \\
-        ${excl_val_arg}     \\
-        ${grp_col_arg}      \\
-        ${grp_paste_arg}
+        --feature_table     '${feature_table}'             \\
+        --meta_table        '${meta_table}'                \\
+        --tree_file         '${tree_file}'                 \\
+        --input_format      '${params.input_format}'       \\
+        --output_dir        '.'                            \\
+        --label             '${params.label}'              \\
+        --scripts_dir       '${projectDir}'                \\
+        --min_library_size  ${params.min_library_size}     \\
+        --beta_reps         ${params.qpe_beta_reps}        \\
+        --ems_sims          ${params.qpe_ems_sims}         \\
+        ${tax_arg}                                         \\
+        ${excl_col}                                        \\
+        ${excl_val}                                        \\
+        ${params.group ? "--group '${params.group}'" : ""}
     """
 }
 

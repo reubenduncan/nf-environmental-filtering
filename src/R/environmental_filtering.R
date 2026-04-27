@@ -54,21 +54,15 @@ option_list <- list(
               help="Comma-separated values in exclude_column to remove"),
 
   # Grouping
-  make_option("--groups_column",
+  make_option("--group",
               type="character", default="",
-              help="Metadata column for the Groups variable"),
-  make_option("--groups_paste_columns",
+              help="One metadata column, or comma-separated columns to paste (space-joined) as the Groups label"),
+  make_option("--type",
               type="character", default="",
-              help="Comma-separated metadata columns pasted together to form Groups"),
-  make_option("--type_column",
+              help="Metadata column for sample Type (included in output CSVs)"),
+  make_option("--type2",
               type="character", default="",
-              help="Metadata column for sample Type"),
-  make_option("--type2_column",
-              type="character", default="",
-              help="Metadata column for secondary Type2 grouping"),
-  make_option("--type2_levels",
-              type="character", default="",
-              help="Comma-separated ordered factor levels for Type2"),
+              help="Metadata column for secondary Type2 annotation (included in output CSVs)"),
 
   # NRI / NTI
   make_option("--runs",
@@ -156,13 +150,12 @@ meta_table <- local({
          " not found in metadata. Available columns: ",
          paste(colnames(df), collapse = ", "))
 }
-.check_col(opt$exclude_column,       meta_table, "--exclude_column")
-.check_col(opt$groups_column,        meta_table, "--groups_column")
-.check_col(opt$type_column,          meta_table, "--type_column")
-.check_col(opt$type2_column,         meta_table, "--type2_column")
-if (opt$groups_paste_columns != "") {
-  for (pc in trimws(strsplit(opt$groups_paste_columns, ",")[[1]]))
-    .check_col(pc, meta_table, "--groups_paste_columns")
+.check_col(opt$exclude_column, meta_table, "--exclude_column")
+.check_col(opt$type,           meta_table, "--type")
+.check_col(opt$type2,          meta_table, "--type2")
+if (opt$group != "") {
+  for (pc in trimws(strsplit(opt$group, ",")[[1]]))
+    .check_col(pc, meta_table, "--group")
 }
 
 # ---------------------------------------------------------------------------
@@ -187,28 +180,26 @@ if (opt$exclude_column != "" && opt$exclude_values != "") {
   meta_table <- meta_table[keep_rows, , drop = FALSE]
 }
 
-if (opt$groups_paste_columns != "") {
-  paste_cols        <- trimws(strsplit(opt$groups_paste_columns, ",")[[1]])
-  meta_table$Groups <- as.factor(do.call(paste, c(meta_table[, paste_cols, drop = FALSE], sep = " ")))
-} else if (opt$groups_column != "") {
-  meta_table$Groups <- as.factor(as.character(meta_table[[opt$groups_column]]))
+if (opt$group != "") {
+  cols <- trimws(strsplit(opt$group, ",")[[1]])
+  meta_table$Groups <- if (length(cols) == 1) {
+    as.factor(as.character(meta_table[[cols]]))
+  } else {
+    as.factor(do.call(paste, c(meta_table[, cols, drop = FALSE], sep = " ")))
+  }
 } else {
   meta_table$Groups <- factor("All")
+  message("No --group specified — all samples assigned to group 'All'.")
 }
 
-if (opt$type_column != "") {
-  meta_table$Type <- as.factor(as.character(meta_table[[opt$type_column]]))
+if (opt$type != "") {
+  meta_table$Type <- as.factor(as.character(meta_table[[opt$type]]))
 } else {
   meta_table$Type <- NULL
 }
 
-if (opt$type2_column != "") {
-  meta_table$Type2 <- as.character(meta_table[[opt$type2_column]])
-  if (opt$type2_levels != "")
-    meta_table$Type2 <- factor(meta_table$Type2,
-                               levels = trimws(strsplit(opt$type2_levels, ",")[[1]]))
-  else
-    meta_table$Type2 <- as.factor(meta_table$Type2)
+if (opt$type2 != "") {
+  meta_table$Type2 <- as.factor(as.character(meta_table[[opt$type2]]))
 } else {
   meta_table$Type2 <- NULL
 }
@@ -260,7 +251,7 @@ common_features <- intersect(colnames(abund_table), feature_tree$tip.label)
 if (length(common_features) == 0)
   stop("No features remain after aligning feature table to tree tips.")
 abund_table <- abund_table[, feature_tree$tip.label, drop = FALSE]
-abund_table <- as(abund_table, "matrix")
+abund_table <- as.matrix(abund_table)
 
 message("Running NRI/NTI on ", nrow(abund_table), " samples x ",
         ncol(abund_table), " features.")

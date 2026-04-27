@@ -21,7 +21,7 @@ library(data.table)
   parts <- trimws(strsplit(tax_string, ";")[[1]])
 
   strip_prefix <- function(x) {
-    x <- gsub("^D_0__|^d__", "", x)
+    x <- gsub("^D_0__|^d__|^k__", "", x)
     x <- gsub("^D_1__|^p__", "", x)
     x <- gsub("^D_2__|^c__", "", x)
     x <- gsub("^D_3__|^o__", "", x)
@@ -96,21 +96,56 @@ load_feature_table <- function(feature_table, input_format, taxonomy_table = NUL
     abund_mat <- as.matrix(otu_table(physeq))
     if (taxa_are_rows(physeq)) abund_mat <- t(abund_mat)
 
-    tax_raw         <- as.data.frame(tax_table(physeq))
-    n_cols          <- ncol(tax_raw)
-    rank_names_std  <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Feature")
-    if (n_cols >= 7) {
-      colnames(tax_raw)[1:7] <- rank_names_std
+    rank_names_std <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Feature")
+
+    if (inherits(physeq, "phyloseq")) {
+      tax_raw <- as.data.frame(tax_table(physeq))
+      n_cols  <- ncol(tax_raw)
+      if (n_cols >= 7) {
+        colnames(tax_raw)[1:7] <- rank_names_std
+      } else {
+        colnames(tax_raw) <- rank_names_std[seq_len(n_cols)]
+        for (r in rank_names_std[seq(n_cols + 1, 7)]) tax_raw[[r]] <- ""
+      }
+      tax_raw <- .strip_tax_df_prefixes(tax_raw)
+      common  <- intersect(colnames(abund_mat), rownames(tax_raw))
+      abund_mat <- abund_mat[, common, drop = FALSE]
+      tax_raw   <- tax_raw[common,    , drop = FALSE]
+      return(.prune_taxonomy(abund_mat, tax_raw))
+    } else if (!is.null(taxonomy_table) && taxonomy_table != "" && file.exists(taxonomy_table)) {
+      message("BIOM has no embedded taxonomy — loading separate taxonomy table: ", taxonomy_table)
+      tax_raw <- tryCatch(
+        as.data.frame(fread(taxonomy_table, sep = "\t", header = FALSE,
+                            check.names = FALSE, fill = TRUE)),
+        error = function(e) stop("Failed to read taxonomy table: ", conditionMessage(e))
+      )
+      feat_ids   <- as.character(tax_raw[[1]])
+      tax_strs   <- as.character(tax_raw[[2]])
+      tax_parsed <- as.data.frame(
+        t(mapply(.parse_tax_string, tax_strs)),
+        stringsAsFactors = FALSE
+      )
+      rownames(tax_parsed) <- feat_ids
+      colnames(tax_parsed) <- rank_names_std
+      common <- intersect(colnames(abund_mat), rownames(tax_parsed))
+      if (length(common) == 0)
+        stop("No feature IDs overlap between BIOM file and taxonomy table.")
+      abund_mat  <- abund_mat[, common, drop = FALSE]
+      tax_parsed <- tax_parsed[common, , drop = FALSE]
+      return(.prune_taxonomy(abund_mat, tax_parsed))
     } else {
-      colnames(tax_raw) <- rank_names_std[seq_len(n_cols)]
-      for (r in rank_names_std[seq(n_cols + 1, 7)]) tax_raw[[r]] <- ""
+      message(
+        "BIOM file has no embedded taxonomy. All features treated as features. ",
+        "Use --taxon_rank Feature, or supply a separate --taxonomy_table."
+      )
+      tax_raw <- data.frame(
+        matrix("", nrow = ncol(abund_mat), ncol = 7,
+               dimnames = list(colnames(abund_mat), rank_names_std)),
+        stringsAsFactors = FALSE
+      )
+      tax_raw$Feature <- colnames(abund_mat)
+      return(list(abund_table = abund_mat, feature_taxonomy = tax_raw))
     }
-    tax_raw <- .strip_tax_df_prefixes(tax_raw)
-    common_features <- intersect(colnames(abund_mat), rownames(tax_raw))
-    abund_mat <- abund_mat[, common_features, drop = FALSE]
-    tax_raw   <- tax_raw[common_features, , drop = FALSE]
-    pruned    <- .prune_taxonomy(abund_mat, tax_raw)
-    return(pruned)
   }
 
   # ---- TSV / GTDB ---------------------------------------------------------
