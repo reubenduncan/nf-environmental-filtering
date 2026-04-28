@@ -3,6 +3,20 @@
 # and Elements of Metacommunity Structure (EMS) per group.
 # Outputs eight CSVs consumed by QPE_summary.R.
 
+local({
+  user_lib <- Sys.getenv("R_LIBS_USER",
+                         unset = file.path(Sys.getenv("HOME"), "R", "library"))
+  dir.create(user_lib, showWarnings = FALSE, recursive = TRUE)
+  if (!user_lib %in% .libPaths()) .libPaths(c(user_lib, .libPaths()))
+  pkgs <- c("ecodist", "metacom")
+  miss <- pkgs[!sapply(pkgs, requireNamespace, quietly = TRUE)]
+  if (length(miss)) {
+    message("Installing missing R packages: ", paste(miss, collapse = ", "))
+    install.packages(miss, lib = user_lib, repos = "https://cloud.r-project.org",
+                     quiet = TRUE)
+  }
+})
+
 suppressPackageStartupMessages({
   library(optparse)
   library(phyloseq)

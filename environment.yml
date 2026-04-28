@@ -14,11 +14,8 @@ dependencies:
   - r-ape
   - r-plyr
   - r-reshape2
-  - r-nst
-  - r-ecodist
-  - r-metacom
   - bioconductor-phyloseq
-  - bioconductor-picante
+  - r-picante
   - r-arrow
 
   # Pipeline orchestration

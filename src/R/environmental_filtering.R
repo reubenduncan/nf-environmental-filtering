@@ -353,7 +353,8 @@ if (opt$test_method != "none" && length(all_groups) >= 2) {
       g1  <- group_pairs[1, l]
       g2  <- group_pairs[2, l]
       sub <- df_m[df_m$Groups %in% c(g1, g2), ]
-      if (nrow(sub) < 2) {
+      groups_in_sub <- unique(as.character(sub$Groups))
+      if (nrow(sub) < 2 || length(groups_in_sub) < 2) {
         pval <- NA_real_
       } else if (opt$test_method == "anova") {
         pval <- tryCatch(

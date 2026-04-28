@@ -298,6 +298,32 @@
                 }
             }
         },
+        "skip_options": {
+            "title": "Skip Options",
+            "type": "object",
+            "fa_icon": "fas fa-forward",
+            "description": "Flags to skip individual analyses.",
+            "properties": {
+                "skip_ef": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Skip the NRI/NTI environmental filtering analysis (ENV_FILTERING process).",
+                    "fa_icon": "fas fa-forward"
+                },
+                "skip_nst": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Skip the NST stochasticity ratio analysis.",
+                    "fa_icon": "fas fa-forward"
+                },
+                "skip_qpe": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Skip the QPE betaNTI/Raup-Crick and QPE_SUMMARY assembly processes analyses.",
+                    "fa_icon": "fas fa-forward"
+                }
+            }
+        },
         "output_options": {
             "title": "Output Options",
             "type": "object",
@@ -332,6 +358,9 @@
         },
         {
             "$ref": "#/definitions/qpe_options"
+        },
+        {
+            "$ref": "#/definitions/skip_options"
         },
         {
             "$ref": "#/definitions/output_options"

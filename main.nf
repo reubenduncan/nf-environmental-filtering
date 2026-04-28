@@ -224,40 +224,49 @@ workflow {
         ? Channel.fromPath(params.tree_file, checkIfExists: true)
         : Channel.value(file("NO_FILE"))
 
-    // Run analyses — NST runs independently of tree-based analyses
-    ef_out  = ENV_FILTERING(feat_ch, meta_ch, tree_ch)
-    nst_out = NST(feat_ch, meta_ch)
-    qpe_out = QPE(feat_ch, meta_ch, tree_ch)
-
-    // QPE_SUMMARY depends on QPE outputs
-    sum_out = QPE_SUMMARY(
-        qpe_out.pairwise_bnti,
-        qpe_out.pairwise_rc,
-        qpe_out.rc,
-        qpe_out.coherence,
-        qpe_out.boundary,
-        qpe_out.turnover
-    )
+    // Run analyses conditionally based on skip flags
+    if (!params.skip_ef)  ef_out  = ENV_FILTERING(feat_ch, meta_ch, tree_ch)
+    if (!params.skip_nst) nst_out = NST(feat_ch, meta_ch)
+    if (!params.skip_qpe) {
+        qpe_out = QPE(feat_ch, meta_ch, tree_ch)
+        sum_out = QPE_SUMMARY(
+            qpe_out.pairwise_bnti,
+            qpe_out.pairwise_rc,
+            qpe_out.rc,
+            qpe_out.coherence,
+            qpe_out.boundary,
+            qpe_out.turnover
+        )
+    }
 
     // Optional: merge all CSVs into a single Parquet file
     if (params.merge_parquet) {
-        all_csvs = ef_out.ef_wide
-            .mix(ef_out.ef_long)
-            .mix(ef_out.ef_pairwise)
-            .mix(nst_out.nst_values)
-            .mix(nst_out.nst_panova.ifEmpty(Channel.empty()))
-            .mix(nst_out.nst_pairwise)
-            .mix(qpe_out.coherence)
-            .mix(qpe_out.boundary)
-            .mix(qpe_out.turnover)
-            .mix(qpe_out.sitescores)
-            .mix(qpe_out.pairwise_rc)
-            .mix(qpe_out.pairwise_bnti)
-            .mix(qpe_out.rc)
-            .mix(qpe_out.bnti)
-            .mix(sum_out.assembly_processes)
-            .mix(sum_out.ems)
-            .collect()
-        MERGE_PARQUET(all_csvs)
+        all_csvs = Channel.empty()
+        if (!params.skip_ef) {
+            all_csvs = all_csvs
+                .mix(ef_out.ef_wide)
+                .mix(ef_out.ef_long)
+                .mix(ef_out.ef_pairwise)
+        }
+        if (!params.skip_nst) {
+            all_csvs = all_csvs
+                .mix(nst_out.nst_values)
+                .mix(nst_out.nst_panova.ifEmpty(Channel.empty()))
+                .mix(nst_out.nst_pairwise)
+        }
+        if (!params.skip_qpe) {
+            all_csvs = all_csvs
+                .mix(qpe_out.coherence)
+                .mix(qpe_out.boundary)
+                .mix(qpe_out.turnover)
+                .mix(qpe_out.sitescores)
+                .mix(qpe_out.pairwise_rc)
+                .mix(qpe_out.pairwise_bnti)
+                .mix(qpe_out.rc)
+                .mix(qpe_out.bnti)
+                .mix(sum_out.assembly_processes)
+                .mix(sum_out.ems)
+        }
+        MERGE_PARQUET(all_csvs.collect())
     }
 }
