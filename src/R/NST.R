@@ -3,14 +3,16 @@
 # Outputs three CSVs: values per group, PANOVA results, pairwise values.
 
 local({
-  user_lib <- Sys.getenv("R_LIBS_USER",
-                         unset = file.path(Sys.getenv("HOME"), "R", "library"))
-  dir.create(user_lib, showWarnings = FALSE, recursive = TRUE)
-  if (!user_lib %in% .libPaths()) .libPaths(c(user_lib, .libPaths()))
+  conda_prefix <- Sys.getenv("CONDA_PREFIX")
+  lib <- if (nchar(conda_prefix) > 0)
+    file.path(conda_prefix, "lib", "R", "library")
+  else
+    .libPaths()[1]
   miss <- c("NST")[!sapply(c("NST"), requireNamespace, quietly = TRUE)]
   if (length(miss)) {
-    message("Installing missing R packages: ", paste(miss, collapse = ", "))
-    install.packages(miss, lib = user_lib, repos = "https://cloud.r-project.org",
+    message("Installing missing R packages into ", lib, ": ",
+            paste(miss, collapse = ", "))
+    install.packages(miss, lib = lib, repos = "https://cloud.r-project.org",
                      quiet = TRUE)
   }
 })

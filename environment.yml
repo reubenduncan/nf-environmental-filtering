@@ -18,5 +18,8 @@ dependencies:
   - r-picante
   - r-arrow
 
+  # Required to install R NST package from GitHub
+  - cmake
+
   # Pipeline orchestration
   - nextflow>=23.04
