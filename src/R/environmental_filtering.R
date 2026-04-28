@@ -357,10 +357,10 @@ if (opt$test_method != "none" && length(all_groups) >= 2) {
       if (nrow(sub) < 2 || length(groups_in_sub) < 2) {
         pval <- NA_real_
       } else if (opt$test_method == "anova") {
-        pval <- tryCatch(
-          summary(aov(value ~ Groups, data = sub))[[1]][["Pr(>F)"]][1],
-          error = function(e) NA_real_
-        )
+        pval <- tryCatch({
+          p <- summary(aov(value ~ Groups, data = sub))[[1]][["Pr(>F)"]][1]
+          if (length(p) == 1L) p else NA_real_
+        }, error = function(e) NA_real_)
       } else {
         # kruskal
         pval <- tryCatch(
