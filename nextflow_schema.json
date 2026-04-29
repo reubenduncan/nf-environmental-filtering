@@ -324,6 +324,22 @@
                 }
             }
         },
+        "resource_options": {
+            "title": "Resource Options",
+            "type": "object",
+            "fa_icon": "fas fa-microchip",
+            "description": "CPU and memory resource limits for compute-intensive processes.",
+            "properties": {
+                "max_cpus": {
+                    "type": "integer",
+                    "default": 4,
+                    "minimum": 1,
+                    "description": "Maximum CPUs allocated to compute-intensive processes (QPE, NST). Increase to match available HPC threads, e.g. --max_cpus 64.",
+                    "help_text": "QPE uses this many threads for betaNTI randomisations via mclapply. NST passes it directly to tNST nworker. ENV_FILTERING is capped at 2 regardless (ses.mpd and ses.mntd run as two parallel forks).",
+                    "fa_icon": "fas fa-microchip"
+                }
+            }
+        },
         "output_options": {
             "title": "Output Options",
             "type": "object",
@@ -361,6 +377,9 @@
         },
         {
             "$ref": "#/definitions/skip_options"
+        },
+        {
+            "$ref": "#/definitions/resource_options"
         },
         {
             "$ref": "#/definitions/output_options"
