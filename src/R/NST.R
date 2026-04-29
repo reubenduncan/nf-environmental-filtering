@@ -86,7 +86,10 @@ option_list <- list(
               help="Calculate standardized effect size [default: TRUE via nextflow.config]"),
   make_option("--nst_rc",
               action="store_true", default=FALSE,
-              help="Calculate modified Raup-Crick metric [default: FALSE]")
+              help="Calculate modified Raup-Crick metric [default: FALSE]"),
+  make_option("--threads",
+              type="integer", default=1L,
+              help="Number of parallel workers for tNST [default: 1]")
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
@@ -220,7 +223,7 @@ tnst <- tryCatch(
        dist.method = opt$nst_distance,
        null.model  = opt$nst_null_model,
        output.rand = TRUE,
-       nworker     = 1,
+       nworker     = opt$threads,
        SES         = opt$nst_ses,
        RC          = opt$nst_rc),
   error = function(e) {

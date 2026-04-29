@@ -52,6 +52,7 @@ process ENV_FILTERING {
         ${excl_col}                                        \\
         ${excl_val}                                        \\
         ${params.group ? "--group '${params.group}'" : ""} \\
+        --threads           ${task.cpus}                       \\
         ${params.type  ? "--type  '${params.type}'"  : ""} \\
         ${params.type2 ? "--type2 '${params.type2}'" : ""}
     """
@@ -100,6 +101,7 @@ process NST {
         ${tax_arg}                                           \\
         ${excl_col}                                          \\
         ${excl_val}                                          \\
+        --threads           ${task.cpus}                       \\
         ${params.group ? "--group '${params.group}'" : ""}
     """
 }
@@ -147,6 +149,7 @@ process QPE {
         ${tax_arg}                                         \\
         ${excl_col}                                        \\
         ${excl_val}                                        \\
+        --threads           ${task.cpus}                   \\
         ${params.group ? "--group '${params.group}'" : ""}
     """
 }

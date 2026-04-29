@@ -85,7 +85,10 @@ option_list <- list(
               help="Randomizations for betaNTI and Raup-Crick [default: 999]"),
   make_option("--ems_sims",
               type="integer", default=999L,
-              help="Null model simulations for metacom EMS [default: 999]")
+              help="Null model simulations for metacom EMS [default: 999]"),
+  make_option("--threads",
+              type="integer", default=1L,
+              help="Number of parallel threads for betaNTI reps [default: 1]")
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
@@ -495,15 +498,19 @@ for (i in seq_along(grp_levels)) {
       cop_grp    <- cophenetic(tree_grp)
       beta_obs   <- as.matrix(comdistnt(t(at_grp), cop_grp, abundance.weighted = TRUE))
 
+      message("  Running ", beta.reps, " betaNTI reps on ", opt$threads,
+              " thread(s)...")
+      rand_bMNTD_list <- parallel::mclapply(
+        seq_len(beta.reps),
+        function(rep) {
+          as.matrix(comdistnt(t(at_grp), taxaShuffle(cop_grp),
+                              abundance.weighted   = TRUE,
+                              exclude.conspecifics = FALSE))
+        },
+        mc.cores = opt$threads
+      )
       rand_bMNTD <- array(-999, dim = c(ncol(at_grp), ncol(at_grp), beta.reps))
-      for (rep in seq_len(beta.reps)) {
-        rand_bMNTD[, , rep] <- as.matrix(
-          comdistnt(t(at_grp),
-                    taxaShuffle(cop_grp),
-                    abundance.weighted    = TRUE,
-                    exclude.conspecifics = FALSE))
-        message("  betaNTI rep ", rep, "/", beta.reps, " — ", date())
-      }
+      for (i in seq_along(rand_bMNTD_list)) rand_bMNTD[, , i] <- rand_bMNTD_list[[i]]
 
       weighted_bNTI <- matrix(NA_real_, nrow = ncol(at_grp), ncol = ncol(at_grp),
                               dimnames = list(colnames(at_grp), colnames(at_grp)))

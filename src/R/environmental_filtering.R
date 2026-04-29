@@ -87,7 +87,10 @@ option_list <- list(
               help="Pairwise test: anova | kruskal | none [default: anova]"),
   make_option("--p_adjust_method",
               type="character", default="BH",
-              help="P-value adjustment method: BH | bonferroni | holm | none [default: BH]")
+              help="P-value adjustment method: BH | bonferroni | holm | none [default: BH]"),
+  make_option("--threads",
+              type="integer", default=1L,
+              help="Number of parallel threads (ses.mpd and ses.mntd run concurrently when >= 2) [default: 1]")
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
@@ -262,21 +265,40 @@ message("Running NRI/NTI on ", nrow(abund_table), " samples x ",
 second_label <- if (opt$abundance_weighted) "Weighted" else "Unweighted"
 cop_dist     <- cophenetic(feature_tree)
 
-abund_table.sesmpd <- ses.mpd(
-  abund_table, cop_dist,
-  null.model         = opt$null_model,
-  abundance.weighted = opt$abundance_weighted,
-  runs               = opt$runs,
-  iterations         = opt$iterations
-)
-
-abund_table.sesmntd <- ses.mntd(
-  abund_table, cop_dist,
-  null.model         = opt$null_model,
-  abundance.weighted = opt$abundance_weighted,
-  runs               = opt$runs,
-  iterations         = opt$iterations
-)
+if (opt$threads >= 2L) {
+  job_mpd  <- parallel::mcparallel(ses.mpd(
+    abund_table, cop_dist,
+    null.model         = opt$null_model,
+    abundance.weighted = opt$abundance_weighted,
+    runs               = opt$runs,
+    iterations         = opt$iterations
+  ))
+  job_mntd <- parallel::mcparallel(ses.mntd(
+    abund_table, cop_dist,
+    null.model         = opt$null_model,
+    abundance.weighted = opt$abundance_weighted,
+    runs               = opt$runs,
+    iterations         = opt$iterations
+  ))
+  ses_results         <- parallel::mccollect(list(job_mpd, job_mntd))
+  abund_table.sesmpd  <- ses_results[[1]]
+  abund_table.sesmntd <- ses_results[[2]]
+} else {
+  abund_table.sesmpd <- ses.mpd(
+    abund_table, cop_dist,
+    null.model         = opt$null_model,
+    abundance.weighted = opt$abundance_weighted,
+    runs               = opt$runs,
+    iterations         = opt$iterations
+  )
+  abund_table.sesmntd <- ses.mntd(
+    abund_table, cop_dist,
+    null.model         = opt$null_model,
+    abundance.weighted = opt$abundance_weighted,
+    runs               = opt$runs,
+    iterations         = opt$iterations
+  )
+}
 
 # NRI = –1 * MPD z-score;  NTI = –1 * MNTD z-score
 nri_vals <- -1 * abund_table.sesmpd$mpd.obs.z
