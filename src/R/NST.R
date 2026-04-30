@@ -216,18 +216,29 @@ message("Running tNST on ", nrow(abund_mat), " samples across ",
 # ---------------------------------------------------------------------------
 # NST analysis
 # ---------------------------------------------------------------------------
-tnst <- tryCatch(
+.run_tnst <- function(nworker) {
   tNST(comm        = abund_mat,
        group       = meta_table[, "Groups", drop = FALSE],
        rand        = opt$nst_randomizations,
        dist.method = opt$nst_distance,
        null.model  = opt$nst_null_model,
        output.rand = TRUE,
-       nworker     = opt$threads,
+       nworker     = nworker,
        SES         = opt$nst_ses,
-       RC          = opt$nst_rc),
+       RC          = opt$nst_rc)
+}
+
+tnst <- tryCatch(
+  .run_tnst(opt$threads),
   error = function(e) {
-    stop("tNST() failed: ", conditionMessage(e))
+    if (grepl("SIGPIPE|broken pipe", conditionMessage(e), ignore.case = TRUE) &&
+        opt$threads > 1L) {
+      message("tNST parallel execution hit SIGPIPE; retrying with nworker = 1 ...")
+      tryCatch(.run_tnst(1L),
+               error = function(e2) stop("tNST() failed: ", conditionMessage(e2)))
+    } else {
+      stop("tNST() failed: ", conditionMessage(e))
+    }
   }
 )
 

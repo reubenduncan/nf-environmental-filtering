@@ -500,15 +500,20 @@ for (i in seq_along(grp_levels)) {
 
       message("  Running ", beta.reps, " betaNTI reps on ", opt$threads,
               " thread(s)...")
-      rand_bMNTD_list <- parallel::mclapply(
+      cl <- parallel::makeCluster(opt$threads, type = "PSOCK")
+      parallel::clusterExport(cl, varlist = c("at_grp", "cop_grp"),
+                              envir = environment())
+      parallel::clusterEvalQ(cl, library(picante))
+      rand_bMNTD_list <- parallel::parLapply(
+        cl,
         seq_len(beta.reps),
         function(rep) {
           as.matrix(comdistnt(t(at_grp), taxaShuffle(cop_grp),
                               abundance.weighted   = TRUE,
                               exclude.conspecifics = FALSE))
-        },
-        mc.cores = opt$threads
+        }
       )
+      parallel::stopCluster(cl)
       rand_bMNTD <- array(-999, dim = c(ncol(at_grp), ncol(at_grp), beta.reps))
       for (i in seq_along(rand_bMNTD_list)) rand_bMNTD[, , i] <- rand_bMNTD_list[[i]]
 
