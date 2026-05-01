@@ -334,9 +334,17 @@
                     "type": "integer",
                     "default": 4,
                     "minimum": 1,
-                    "description": "Maximum CPUs allocated to compute-intensive processes (QPE, NST). Increase to match available HPC threads, e.g. --max_cpus 64.",
-                    "help_text": "QPE uses this many threads for betaNTI randomisations via mclapply. NST passes it directly to tNST nworker. ENV_FILTERING is capped at 2 regardless (ses.mpd and ses.mntd run as two parallel forks).",
+                    "description": "CPUs for QPE betaNTI randomisations (PSOCK cluster). Safe to set as high as available HPC cores, e.g. --max_cpus 64.",
+                    "help_text": "Each PSOCK worker runs one betaNTI rep independently. Memory per worker is small so this scales freely. ENV_FILTERING is capped at 2 regardless (ses.mpd and ses.mntd run as two parallel forks).",
                     "fa_icon": "fas fa-microchip"
+                },
+                "nst_workers": {
+                    "type": "integer",
+                    "default": 4,
+                    "minimum": 1,
+                    "description": "Parallel workers for tNST randomisations. Keep low — each worker holds a full copy of the pairwise distance matrix.",
+                    "help_text": "With 454 samples each worker needs ~432 MB. At the default of 4 workers that is ~1.7 GB, safely within the 4 GB NST memory allocation. Increase cautiously: 8 workers needs ~3.5 GB, 16 workers ~7 GB.",
+                    "fa_icon": "fas fa-memory"
                 }
             }
         },
